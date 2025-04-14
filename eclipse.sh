@@ -156,4 +156,163 @@ backup_wallet() {
     
     if [ ! -f ~/.config/solana/id.json ]; then
         echo -e "${RED}Wallet file not found! Have you run the installer?${NC}"
-        read -
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    echo -e "${BLUE}Your wallet information:${NC}"
+    echo -e "${CYAN}Public Key:${NC} $(solana-keygen pubkey)"
+    
+    echo -e "\n${YELLOW}Wallet file content (${BLUE}~/.config/solana/id.json${YELLOW}):${NC}"
+    echo -e "${RED}>>>>>>>>> BEGIN WALLET DATA - KEEP THIS SECURE! <<<<<<<<<${NC}"
+    cat ~/.config/solana/id.json
+    echo -e "${RED}>>>>>>>>> END WALLET DATA <<<<<<<<<${NC}"
+    
+    echo -e "\n${YELLOW}To save this to a file, run:${NC}"
+    echo -e "cat ~/.config/solana/id.json > eclipse_wallet_backup_$(date +%Y-%m-%d).json"
+    echo -e "\n${RED}IMPORTANT: This gives full access to your funds! Store securely!${NC}"
+    read -p "Press Enter to continue..."
+}
+
+# Function to start mining
+start_mining() {
+    echo -e "${YELLOW}=== Start Mining ===${NC}"
+    
+    # Check if screen exists
+    if screen -list | grep -q "eclipse"; then
+        echo -e "${YELLOW}Mining session already running in screen 'eclipse'${NC}"
+        read -p "Do you want to restart it? [y/N]: " restart_choice
+        if [[ $restart_choice =~ ^[Yy]$ ]]; then
+            echo -e "${YELLOW}Stopping existing mining session...${NC}"
+            screen -S eclipse -X quit
+            sleep 2
+        else
+            echo -e "${YELLOW}Returning to menu...${NC}"
+            sleep 1
+            return
+        fi
+    fi
+    
+    echo -e "${BLUE}Starting new mining session in screen...${NC}"
+    screen -S eclipse -dm bash -c "bitz collect; exec bash"
+    
+    echo -e "\n${GREEN}Mining started successfully in screen session 'eclipse'!${NC}"
+    echo -e "\n${YELLOW}Screen Commands:${NC}"
+    echo -e "- Attach to session: ${CYAN}screen -r eclipse${NC}"
+    echo -e "- Detach from session: ${CYAN}CTRL+A then D${NC}"
+    echo -e "- List all screens: ${CYAN}screen -ls${NC}"
+    echo -e "\n${YELLOW}Note: You need 0.005 ETH in your Eclipse wallet to start mining.${NC}"
+    echo -e "${BLUE}Your address: ${NC}$(solana-keygen pubkey)"
+    read -p "Press Enter to continue..."
+}
+
+# Function to check node status and manage mining
+check_node_status() {
+    while true; do
+        clear
+        echo -e "${YELLOW}=== Node Status & Mining Management ===${NC}"
+        
+        # Display public key
+        echo -e "${BLUE}Your Public Key:${NC} $(solana-keygen pubkey)"
+        
+        # Check screen status
+        if screen -list | grep -q "eclipse"; then
+            echo -e "\n${GREEN}✔ Mining screen session is running${NC}"
+            echo -e "${YELLOW}Screen Name:${NC} eclipse"
+            echo -e "${YELLOW}Status:${NC} $(screen -ls | grep eclipse | awk '{print $NF}')"
+            
+            echo -e "\n${CYAN}Management Options:${NC}"
+            echo -e "1. ${GREEN}Attach${NC} to mining session (view live output)"
+            echo -e "2. ${YELLOW}Restart${NC} mining session"
+            echo -e "3. ${RED}Stop${NC} mining session"
+            echo -e "4. Return to main menu"
+            
+            read -p "Enter your choice [1-4]: " status_choice
+            
+            case $status_choice in
+                1)
+                    echo -e "${YELLOW}Attaching to mining session...${NC}"
+                    echo -e "${CYAN}To detach later, press CTRL+A then D${NC}"
+                    sleep 2
+                    screen -r eclipse
+                    ;;
+                2)
+                    echo -e "${YELLOW}Restarting mining session...${NC}"
+                    screen -S eclipse -X quit
+                    sleep 2
+                    screen -S eclipse -dm bash -c "bitz collect; exec bash"
+                    echo -e "${GREEN}Mining session restarted!${NC}"
+                    sleep 2
+                    ;;
+                3)
+                    echo -e "${RED}Stopping mining session...${NC}"
+                    screen -S eclipse -X quit
+                    echo -e "${GREEN}Mining session stopped.${NC}"
+                    sleep 2
+                    return
+                    ;;
+                4)
+                    return
+                    ;;
+                *)
+                    echo -e "${RED}Invalid option!${NC}"
+                    sleep 1
+                    ;;
+            esac
+        else
+            echo -e "\n${RED}No active mining session found${NC}"
+            
+            echo -e "\n${CYAN}Options:${NC}"
+            echo -e "1. ${GREEN}Start${NC} new mining session"
+            echo -e "2. Return to main menu"
+            
+            read -p "Enter your choice [1-2]: " status_choice
+            
+            case $status_choice in
+                1)
+                    start_mining
+                    ;;
+                2)
+                    return
+                    ;;
+                *)
+                    echo -e "${RED}Invalid option!${NC}"
+                    sleep 1
+                    ;;
+            esac
+        fi
+    done
+}
+
+# Function to show public key
+show_public_key() {
+    echo -e "${YELLOW}=== Wallet Address ===${NC}"
+    echo -e "${BLUE}Your Public Key:${NC}"
+    echo -e "$(solana-keygen pubkey)"
+    
+    echo -e "\n${YELLOW}Usage:${NC}"
+    echo -e "- Use this address to receive ETH for mining"
+    echo -e "- Share this address to receive payments"
+    echo -e "- Fund with at least 0.005 ETH to start mining"
+    
+    echo -e "\n${CYAN}Quick copy command:${NC}"
+    echo -e "solana-keygen pubkey | xclip -sel clip (Linux)"
+    echo -e "solana-keygen pubkey | pbcopy (Mac)"
+    
+    read -p "Press Enter to continue..."
+}
+
+# Main program loop
+while true; do
+    show_menu
+    case $choice in
+        1) install_eclipse_node ;;
+        2) backup_wallet ;;
+        3) start_mining ;;
+        4) check_node_status ;;
+        5) show_public_key ;;
+        6) check_system ;;
+        7) echo -e "${RED}Exiting...${NC}"; exit 0 ;;
+        *) echo -e "${RED}Invalid option!${NC}"; sleep 2 ;;
+    esac
+done
