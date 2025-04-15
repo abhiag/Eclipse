@@ -176,6 +176,10 @@ echo -e "${BLUE}[2/5] Installing Solana...${NC}"
 
 # Function to handle wallet backup and restore
 backup_wallet() {
+    # Ensure Solana commands are available
+    source ~/.bashrc 2>/dev/null
+    export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+
     while true; do
         clear
         echo -e "${YELLOW}=== Wallet Management ===${NC}"
