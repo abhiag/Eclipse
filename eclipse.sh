@@ -36,9 +36,9 @@ NC='\033[0m' # No Color
 # Function to display the main menu
 show_menu() {
     clear
-    echo -e "${CYAN}==========================================${NC}"
+    echo -e "${CYAN}============================================================${NC}"
     echo -e "${CYAN}    Eclipse Node Automatic Install Toolkit - BY GA Crypto   ${NC}"
-    echo -e "${CYAN}==========================================${NC}"
+    echo -e "${CYAN}============================================================${NC}"
     echo -e "${GREEN}1. Install Eclipse Node (Complete Setup)${NC}"
     echo -e "${GREEN}2. Backup Your Wallet${NC}"
     echo -e "${GREEN}3. Start Mining${NC}"
@@ -46,7 +46,7 @@ show_menu() {
     echo -e "${GREEN}5. Show Public Key/Address${NC}"
     echo -e "${GREEN}6. Check System Requirements${NC}"
     echo -e "${RED}7. Exit${NC}"
-    echo -e "${CYAN}==========================================${NC}"
+    echo -e "${CYAN}============================================================${NC}"
     read -p "Enter your choice [1-7]: " choice
 }
 
