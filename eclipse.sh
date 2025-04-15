@@ -415,7 +415,7 @@ check_node_status() {
                     echo -e "${YELLOW}Attaching to mining session...${NC}"
                     echo -e "${CYAN}To detach later, press CTRL+A then D${NC}"
                     sleep 2
-                    screen -r eclipse
+                    screen -d -r eclipse
                     ;;
                 2)
                     echo -e "${YELLOW}Restarting mining session...${NC}"
