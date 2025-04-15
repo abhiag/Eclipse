@@ -174,28 +174,116 @@ echo -e "${BLUE}[2/5] Installing Solana...${NC}"
     read -p "Press Enter to continue..."
 }
 
-# Function to backup wallet
+# Function to handle wallet backup and restore
 backup_wallet() {
-    echo -e "${YELLOW}=== Wallet Backup ===${NC}"
-    
-    if [ ! -f ~/.config/solana/id.json ]; then
-        echo -e "${RED}Wallet file not found! Have you run the installer?${NC}"
-        read -p "Press Enter to continue..."
-        return
-    fi
-    
-    echo -e "${BLUE}Your wallet information:${NC}"
-    echo -e "${CYAN}Public Key:${NC} $(solana-keygen pubkey)"
-    
-    echo -e "\n${YELLOW}Wallet file content (${BLUE}~/.config/solana/id.json${YELLOW}):${NC}"
-    echo -e "${RED}>>>>>>>>> BEGIN WALLET DATA - KEEP THIS SECURE! <<<<<<<<<${NC}"
-    cat ~/.config/solana/id.json
-    echo -e "${RED}>>>>>>>>> END WALLET DATA <<<<<<<<<${NC}"
-    
-    echo -e "\n${YELLOW}To save this to a file, run:${NC}"
-    echo -e "cat ~/.config/solana/id.json > eclipse_wallet_backup_$(date +%Y-%m-%d).json"
-    echo -e "\n${RED}IMPORTANT: This gives full access to your funds! Store securely!${NC}"
-    read -p "Press Enter to continue..."
+    while true; do
+        clear
+        echo -e "${YELLOW}=== Wallet Management ===${NC}"
+        echo -e "1. ${GREEN}Backup${NC} current wallet"
+        echo -e "2. ${CYAN}Import${NC} private key"
+        echo -e "3. ${RED}Delete${NC} current wallet"
+        echo -e "4. Return to main menu"
+        read -p "Enter your choice [1-4]: " wallet_choice
+
+        case $wallet_choice in
+            1)
+                echo -e "${YELLOW}=== Wallet Backup ===${NC}"
+                
+                if [ ! -f ~/.config/solana/id.json ]; then
+                    echo -e "${RED}Wallet file not found!${NC}"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+
+                echo -e "${BLUE}Your wallet information:${NC}"
+                echo -e "${CYAN}Public Key:${NC} $(solana-keygen pubkey)"
+                
+                backup_file="eclipse_wallet_$(date +%Y-%m-%d).json"
+                cp ~/.config/solana/id.json "$backup_file"
+                
+                echo -e "\n${GREEN}Wallet backed up to:${NC} $(pwd)/$backup_file"
+                echo -e "\n${RED}IMPORTANT: This file gives full access to your funds! Store securely!${NC}"
+                read -p "Press Enter to continue..."
+                ;;
+
+            2)
+                echo -e "${YELLOW}=== Import Private Key ===${NC}"
+                echo -e "${YELLOW}You need to provide your wallet JSON file.${NC}"
+                
+                # Check if wallet already exists
+                if [ -f ~/.config/solana/id.json ]; then
+                    echo -e "\n${RED}WARNING: Existing wallet found!${NC}"
+                    echo -e "${CYAN}Current public key:${NC} $(solana-keygen pubkey)"
+                    read -p "Overwrite existing wallet? (y/N): " overwrite
+                    if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
+                        echo -e "${YELLOW}Import cancelled.${NC}"
+                        sleep 1
+                        continue
+                    fi
+                fi
+
+                read -e -p "Path to your wallet JSON file: " key_path
+                
+                # Expand ~ if provided
+                key_path="${key_path/#\~/$HOME}"
+                
+                if [ ! -f "$key_path" ]; then
+                    echo -e "${RED}File not found: $key_path${NC}"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+
+                # Validate it's a proper JSON keyfile
+                if ! jq -e . "$key_path" >/dev/null 2>&1; then
+                    echo -e "${RED}Invalid JSON file!${NC}"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+
+                # Create config directory if it doesn't exist
+                mkdir -p ~/.config/solana
+                
+                # Copy the file
+                cp "$key_path" ~/.config/solana/id.json
+                chmod 600 ~/.config/solana/id.json
+                
+                echo -e "\n${GREEN}Wallet imported successfully!${NC}"
+                echo -e "${CYAN}New public key:${NC} $(solana-keygen pubkey)"
+                read -p "Press Enter to continue..."
+                ;;
+
+            3)
+                echo -e "${YELLOW}=== Delete Wallet ===${NC}"
+                if [ ! -f ~/.config/solana/id.json ]; then
+                    echo -e "${RED}No wallet file found!${NC}"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+
+                echo -e "${CYAN}Current public key:${NC} $(solana-keygen pubkey)"
+                echo -e "\n${RED}WARNING: This will permanently delete your wallet file!${NC}"
+                echo -e "${RED}Ensure you have a backup before proceeding!${NC}"
+                read -p "Are you sure? (type 'DELETE' to confirm): " confirm
+                
+                if [ "$confirm" == "DELETE" ]; then
+                    rm -f ~/.config/solana/id.json
+                    echo -e "\n${GREEN}Wallet deleted successfully.${NC}"
+                else
+                    echo -e "${YELLOW}Deletion cancelled.${NC}"
+                fi
+                read -p "Press Enter to continue..."
+                ;;
+
+            4)
+                return
+                ;;
+
+            *)
+                echo -e "${RED}Invalid option!${NC}"
+                sleep 1
+                ;;
+        esac
+    done
 }
 
 # Function to start mining
