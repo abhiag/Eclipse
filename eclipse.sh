@@ -179,8 +179,8 @@ backup_wallet() {
     while true; do
         clear
         echo -e "${YELLOW}=== Wallet Management ===${NC}"
-        echo -e "1. ${GREEN}Backup${NC} current wallet"
-        echo -e "2. ${CYAN}Import${NC} private key"
+        echo -e "1. ${GREEN}Backup${NC} Private Key"
+        echo -e "2. ${CYAN}Import${NC} Private key"
         echo -e "3. ${RED}Delete${NC} current wallet"
         echo -e "4. Return to main menu"
         read -p "Enter your choice [1-4]: " wallet_choice
