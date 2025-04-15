@@ -243,56 +243,56 @@ backup_wallet() {
                 ;;
 
             2)
-                echo -e "${YELLOW}=== Import Private Key ===${NC}"
-                echo -e "${YELLOW}You can import by:${NC}"
-                echo -e "1. Providing path to wallet file"
-                echo -e "2. Pasting the wallet JSON content"
-                read -p "Choose import method [1/2]: " import_method
-
-                if [ "$import_method" == "1" ]; then
-                    read -e -p "Path to your wallet JSON file: " key_path
-                    key_path="${key_path/#\~/$HOME}"
-                    
-                    if [ ! -f "$key_path" ]; then
-                        echo -e "${RED}File not found!${NC}"
-                        read -p "Press Enter to continue..."
-                        continue
-                    fi
-                    
-                    # Validate JSON
-                    if ! jq empty "$key_path" &>/dev/null; then
-                        echo -e "${RED}Invalid JSON file!${NC}"
-                        read -p "Press Enter to continue..."
-                        continue
-                    fi
-                    
-                    mkdir -p ~/.config/solana
-                    cp "$key_path" ~/.config/solana/id.json
-                    
-                elif [ "$import_method" == "2" ]; then
-                    echo -e "${YELLOW}Paste your wallet JSON content (Ctrl+D when done):${NC}"
-                    mkdir -p ~/.config/solana
-                    cat > ~/.config/solana/id.json
-                    
-                    # Validate JSON
-                    if ! jq empty ~/.config/solana/id.json &>/dev/null; then
-                        echo -e "${RED}Invalid JSON data! Import failed.${NC}"
-                        rm -f ~/.config/solana/id.json
-                        read -p "Press Enter to continue..."
-                        continue
-                    fi
-                else
-                    echo -e "${RED}Invalid option!${NC}"
-                    read -p "Press Enter to continue..."
-                    continue
-                fi
-                
-                chmod 600 ~/.config/solana/id.json
-                echo -e "\n${GREEN}Wallet imported successfully!${NC}"
-                if command -v solana-keygen >/dev/null 2>&1; then
-                    echo -e "${CYAN}New public key:${NC} $(solana-keygen pubkey)"
-                fi
-                read -p "Press Enter to continue..."
+    echo -e "${YELLOW}=== Import Private Key ===${NC}"
+    echo -e "${YELLOW}Paste your wallet data (either JSON format or raw private key array):${NC}"
+    echo -e "${CYAN}Example JSON format:${NC}"
+    echo -e '{"version":3,"uuid":"...","crypto":{"ciphertext":"...","cipherparams":{"iv":"..."}}}'
+    echo -e "${CYAN}Example raw key format:${NC}"
+    echo -e "[139,13,109,131,168,149,106,106,72,122,225,...]"
+    echo -e "\n${YELLOW}Press Ctrl+D when finished pasting${NC}"
+    
+    # Create temp file
+    temp_file=$(mktemp)
+    
+    # Read pasted content
+    cat > "$temp_file"
+    
+    # Check if input is JSON format
+    if jq -e . "$temp_file" >/dev/null 2>&1; then
+        # Valid JSON format
+        mkdir -p ~/.config/solana
+        cp "$temp_file" ~/.config/solana/id.json
+        chmod 600 ~/.config/solana/id.json
+        echo -e "\n${GREEN}✓ Wallet imported successfully (JSON format)${NC}"
+        
+    # Check if input is raw key array
+    elif grep -q '^\[[0-9, ]*\]$' "$temp_file"; then
+        # Convert raw array to JSON format
+        echo -n '[' > ~/.config/solana/id.json
+        tr -d '[]' < "$temp_file" | tr -s ' ' '\n' | grep -v '^$' | paste -sd, - >> ~/.config/solana/id.json
+        echo ']' >> ~/.config/solana/id.json
+        chmod 600 ~/.config/solana/id.json
+        echo -e "\n${GREEN}✓ Wallet imported successfully (raw key format)${NC}"
+        
+    else
+        echo -e "\n${RED}✗ Invalid input format!${NC}"
+        echo -e "${YELLOW}Supported formats:${NC}"
+        echo -e "1. Standard JSON wallet file"
+        echo -e "2. Raw private key array like [139,13,109,...]"
+        rm -f "$temp_file"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # Cleanup
+    rm -f "$temp_file"
+    
+    # Verify and show public key
+    if command -v solana-keygen >/dev/null 2>&1; then
+        echo -e "${CYAN}New public key:${NC} $(solana-keygen pubkey)"
+    fi
+    
+    read -p "Press Enter to continue..."
                 ;;
 
             3)
