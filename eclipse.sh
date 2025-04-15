@@ -333,38 +333,57 @@ backup_wallet() {
 
 # Function to start mining
 start_mining() {
-
-    # Ensure Solana commands are available
-    source ~/.bashrc 2>/dev/null
-    export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-
     echo -e "${YELLOW}=== Start Mining ===${NC}"
     
-    # Check if screen exists
+    # Ensure PATH includes cargo/bin and solana binaries
+    export PATH="$HOME/.cargo/bin:$HOME/.local/share/solana/install/active_release/bin:$PATH"
+    
+    # Check if bitz is installed
+    if ! command -v bitz &> /dev/null; then
+        echo -e "${RED}Error: bitz command not found!${NC}"
+        echo -e "${YELLOW}Please ensure you've installed it with:${NC}"
+        echo -e "cargo install bitz"
+        read -p "Press Enter to return to menu..."
+        return 1
+    fi
+
+    # Check for existing session
     if screen -list | grep -q "eclipse"; then
-        echo -e "${YELLOW}Mining session already running in screen 'eclipse'${NC}"
-        read -p "Do you want to restart it? [y/N]: " restart_choice
-        if [[ $restart_choice =~ ^[Yy]$ ]]; then
-            echo -e "${YELLOW}Stopping existing mining session...${NC}"
-            screen -S eclipse -X quit
-            sleep 2
-        else
-            echo -e "${YELLOW}Returning to menu...${NC}"
-            sleep 1
-            return
+        echo -e "${YELLOW}Existing mining session found.${NC}"
+        read -p "Restart mining session? [y/N] " restart_choice
+        if [[ ! "$restart_choice" =~ ^[Yy]$ ]]; then
+            return 0
         fi
+        echo -e "${YELLOW}Stopping existing session...${NC}"
+        screen -S eclipse -X quit
+        sleep 2
+    fi
+
+    echo -e "${BLUE}Starting new mining session in screen...${NC}"
+    
+    # Start screen with proper environment
+    screen -S eclipse -dm bash -c "
+        # Set up environment
+        source $HOME/.bashrc
+        export PATH=\"$HOME/.cargo/bin:$HOME/.local/share/solana/install/active_release/bin:\$PATH\"
+        
+        # Start mining
+        echo -e \"\n${GREEN}Starting bitz collect...${NC}\"
+        bitz collect
+        
+        # Keep shell open if there's an error
+        echo -e \"\n${RED}Mining session stopped. Press Enter to close...${NC}\"
+        read
+    "
+
+    if screen -list | grep -q "eclipse"; then
+        echo -e "\n${GREEN}✓ Mining started successfully in screen session 'eclipse'${NC}"
+        echo -e "${YELLOW}To view:${NC} screen -d -r eclipse"
+        echo -e "${YELLOW}To detach:${NC} CTRL+A then D"
+    else
+        echo -e "\n${RED}✗ Failed to start mining session!${NC}"
     fi
     
-    echo -e "${BLUE}Starting new mining session in screen...${NC}"
-    screen -S eclipse -dm bash -c "bitz collect; exec bash"
-    
-    echo -e "\n${GREEN}Mining started successfully in screen session 'eclipse'!${NC}"
-    echo -e "\n${YELLOW}Screen Commands:${NC}"
-    echo -e "- Attach to session: ${CYAN}screen -d -r eclipse${NC}"
-    echo -e "- Detach from session: ${CYAN}CTRL+A then D${NC}"
-    echo -e "- List all screens: ${CYAN}screen -ls${NC}"
-    echo -e "\n${YELLOW}Note: You need 0.005 ETH in your Eclipse wallet to start mining.${NC}"
-    echo -e "${BLUE}Your address: ${NC}$(solana-keygen pubkey)"
     read -p "Press Enter to continue..."
 }
 
