@@ -110,14 +110,38 @@ install_eclipse_node() {
     fi
     
     # Install Solana
-    echo -e "${BLUE}[2/5] Installing Solana...${NC}"
+echo -e "${BLUE}[2/5] Installing Solana...${NC}"
     if ! command -v solana &> /dev/null; then
+        # Install Solana
         curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash -s -- -y
-        echo 'export PATH="/root/.local/share/solana/install/active_release/bin:$PATH"' >> ~/.bashrc
-        source ~/.bashrc
-        echo -e "${GREEN}Solana installed successfully!${NC}"
+        
+        # Determine the correct installation path
+        SOLANA_PATH="$HOME/.local/share/solana/install/active_release/bin"
+        
+        # Add to PATH if not already present
+        if [[ ":$PATH:" != *":$SOLANA_PATH:"* ]]; then
+            echo -e "${YELLOW}Adding Solana to PATH...${NC}"
+            echo "export PATH=\"$SOLANA_PATH:\$PATH\"" >> ~/.bashrc
+            
+            # Also add to current session PATH
+            export PATH="$SOLANA_PATH:$PATH"
+            
+            # Source bashrc for good measure
+            source ~/.bashrc >/dev/null 2>&1
+        fi
+        
+        # Verify installation
+        if command -v solana &> /dev/null; then
+            echo -e "${GREEN}Solana installed successfully!${NC}"
+            echo -e "${YELLOW}Version: ${NC}$(solana --version)"
+        else
+            echo -e "${RED}Solana installation completed but could not verify.${NC}"
+            echo -e "${YELLOW}Please check if $SOLANA_PATH exists and is in your PATH.${NC}"
+        fi
     else
-        echo -e "${YELLOW}Solana already installed. Skipping...${NC}"
+        echo -e "${YELLOW}Solana already installed.${NC}"
+        echo -e "${YELLOW}Version: ${NC}$(solana --version)"
+        echo -e "${YELLOW}Location: ${NC}$(which solana)"
     fi
     
     # Generate new keypair
