@@ -360,7 +360,7 @@ start_mining() {
     
     echo -e "\n${GREEN}Mining started successfully in screen session 'eclipse'!${NC}"
     echo -e "\n${YELLOW}Screen Commands:${NC}"
-    echo -e "- Attach to session: ${CYAN}screen -r eclipse${NC}"
+    echo -e "- Attach to session: ${CYAN}screen -d -r eclipse${NC}"
     echo -e "- Detach from session: ${CYAN}CTRL+A then D${NC}"
     echo -e "- List all screens: ${CYAN}screen -ls${NC}"
     echo -e "\n${YELLOW}Note: You need 0.005 ETH in your Eclipse wallet to start mining.${NC}"
