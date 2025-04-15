@@ -333,6 +333,11 @@ backup_wallet() {
 
 # Function to start mining
 start_mining() {
+
+    # Ensure Solana commands are available
+    source ~/.bashrc 2>/dev/null
+    export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+
     echo -e "${YELLOW}=== Start Mining ===${NC}"
     
     # Check if screen exists
